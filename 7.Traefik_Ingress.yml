@@ -1,0 +1,35 @@
+#Ingress for Traefik Dashboard
+cd /etc/letsencrypt/live/k8sb32.xyz/
+kubectl -n traefik create secret tls wc-my-tls-secret --cert=fullchain.pem --key=privkey.pem
+cd /etc/letsencrypt/live/k8sb32.xyz-0001/
+kubectl -n traefik create secret tls naked-my-tls-secret --cert=fullchain.pem --key=privkey.pem
+
+kubectl expose deployment traefik --name traefik-ing  --port 9000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: traefik-dashboard-ingress
+  namespace: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/frontend-entry-points: http,https
+    traefik.ingress.kubernetes.io/redirect-entry-point: https #Redirect to https not working.
+spec:
+  ingressClassName: "traefik"
+  tls:
+  - hosts:
+    - "traefik.k8sb32.xyz"
+    secretName: wc-tls-secret
+  rules:
+    - host: traefik.k8sb32.xyz
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: traefik-ing
+                port:
+                  number: 9000

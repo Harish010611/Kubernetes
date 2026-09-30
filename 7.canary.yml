@@ -1,0 +1,148 @@
+#kubectl patch ingress canary-ingress-2 -p '{"metadata": {"annotations":{"nginx.ingress.kubernetes.io/canary-weight":"0"}}}'
+##Deployment & Service 1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: app1
+  name: app1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: app1
+  template:
+    metadata:
+      labels:
+        app: app1
+    spec:
+      containers:
+      - image: sreeharshav/testcontainer:v1
+        name: testcontainer
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 45
+          periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: app1
+  name: app1
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: app1
+
+#Ingress for vote.k8sb36.xyz
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: canary-ingress-1
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - "canary.k8sb36.xyz"
+    secretName: wc-k8sb36-xyz
+  rules:
+  - host: canary.k8sb36.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: app1
+            port:
+              number: 80
+
+
+
+##Deployment & Service 2
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: app2
+  name: app2
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: app2
+  template:
+    metadata:
+      labels:
+        app: app2
+    spec:
+      containers:
+      - image: sreeharshav/fastapi:latest
+        name: fastapi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: app2
+  name: app2
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: app2
+
+---
+#Ingress for vote.k8sb36.xyz
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: canary-ingress-2
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/canary: "true"
+    nginx.ingress.kubernetes.io/canary-weight: "0"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - "canary.k8sb36.xyz"
+    secretName: wc-k8sb36-xyz
+  rules:
+  - host: canary.k8sb36.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: app2
+            port:
+              number: 80
+
+#Patch for 25% Traffic to app2
+#kubectl patch ingress canary-ingress-2 -p '{"metadata": {"annotations":{"nginx.ingress.kubernetes.io/canary-weight":"25"}}}'
+
+#Patch for 50% Traffic to app2
+#kubectl patch ingress canary-ingress-2 -p '{"metadata": {"annotations":{"nginx.ingress.kubernetes.io/canary-weight":"50"}}}'
+
+#Patch for 75% Traffic to app2
+#kubectl patch ingress canary-ingress-2 -p '{"metadata": {"annotations":{"nginx.ingress.kubernetes.io/canary-weight":"75"}}}'
+
+#Patch for 100% Traffic to app2
+#kubectl patch ingress canary-ingress-2 -p '{"metadata": {"annotations":{"nginx.ingress.kubernetes.io/canary-weight":"100"}}}'

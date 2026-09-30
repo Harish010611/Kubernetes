@@ -1,0 +1,109 @@
+#Ingress for app1.harishk8s.com
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tomcat-app1
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  namespace: tomcat-app1
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - "tomcat-app1.harishk8s.com"
+    secretName: wc-harishk8s.com
+  rules:
+  - host: tomcat-app1.harishk8s.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: tomcat-service
+            port:
+              number: 80
+...
+---
+#Ingress for app2.harishk8s.com
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tomcat-app2
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  namespace: tomcat-app2
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - "tomcat-app2.harishk8s.com"
+    secretName: wc-harishk8s.com
+  rules:
+  - host: tomcat-app2.harishk8s.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: login-service
+            port:
+              number: 80
+...
+---
+#Ingress for app3.harishk8s.com
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tomcat-app3
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  namespace: tomcat-app3
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - "tomcat-app3.harishk8s.com"
+    secretName: wc-harishk8s.com
+  rules:
+  - host: tomcat-app3.harishk8s.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: jboss-service
+            port:
+              number: 80
+...
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tomcat-app3
+  namespace: tomcat-app3
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - tomcat-app3.harishk8s.com
+    secretName: wc-harishk8s.com
+
+  rules:
+  - host: tomcat-app3.harishk8s.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: jboss-admin-service
+            port:
+              number: 9990
+...
+watch -n 1 kubectl get ing -A

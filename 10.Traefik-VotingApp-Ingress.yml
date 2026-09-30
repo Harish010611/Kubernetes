@@ -1,0 +1,82 @@
+# kubectl create secret tls naked-my-tls-secret --cert=nk-k8sb27-xyz.crt --key=nk-k8sb27-xyz.key
+# kubectl create secret tls wc-my-tls-secret --cert=wc-k8sb27-xyz.crt --key=wc-k8sb27-xyz.key
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app1
+  namespace: default
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/frontend-entry-points: http,https
+    traefik.ingress.kubernetes.io/redirect-entry-point: https #Redirect to https not working.
+spec:
+  ingressClassName: "traefik"
+  tls:
+  - hosts:
+    - "www.k8sb32.xyz"
+    - "vote.k8sb32.xyz"
+    - "result.k8sb32.xyz"
+    secretName: wc-tls-secret
+  rules:
+    - host: www.k8sb32.xyz
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: vote
+                port:
+                  number: 80
+    - host: vote.k8sb32.xyz
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: vote
+                port:
+                  number: 80
+    - host: result.k8sb32.xyz
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: result
+                port:
+                  number: 80
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app1-naked
+  namespace: default
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/frontend-entry-points: http,https
+    traefik.ingress.kubernetes.io/redirect-entry-point: https #Redirect to https not working.
+spec:
+  ingressClassName: "traefik"
+  tls:
+  - hosts:
+    - "k8sb32.xyz"
+    secretName: nktls-secret
+  rules:
+    - host: k8sb32.xyz
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: vote
+                port:
+                  number: 80

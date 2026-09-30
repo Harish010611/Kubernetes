@@ -1,0 +1,144 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: app1
+  name: app1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: app1
+  template:
+    metadata:
+      labels:
+        app: app1
+    spec:
+      containers:
+      - image: sreeharshav/testcontainer:v1
+        name: testcontainer
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: app1
+  name: app1
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: app1
+
+---
+#Ingress for vote.k8sb36.xyz
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bluegreen-ingress-1
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - "bg.k8sb36.xyz"
+    secretName: wc-k8sb36-xyz
+  rules:
+  - host: bg.k8sb36.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: app1
+            port:
+              number: 80
+
+
+
+##Deployment & Service 2
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: app2
+  name: app2
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: app2
+  template:
+    metadata:
+      labels:
+        app: app2
+    spec:
+      containers:
+      - image: sreeharshav/fastapi:latest
+        name: fastapi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: app2
+  name: app2
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: app2
+
+Patch For Green Deployment
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - "bg.k8sb36.xyz"
+    secretName: wc-k8sb36-xyz
+  rules:
+  - host: bg.k8sb36.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: app2
+            port:
+              number: 80
+
+nano /tmp/green-patch.yml
+kubectl patch ingress app1-ingress --patch-file /tmp/green-patch.yml
+
+To revert, Patch For Blue Deployment
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - "bg.k8sb36.xyz"
+    secretName: wc-k8sb36-xyz
+  rules:
+  - host: bg.k8sb36.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: app1
+            port:
+              number: 80
+
+nano /tmp/blue-patch.yml
+kubectl patch ingress bluegreen-ingress-1 --patch-file /tmp/blue-patch.yml
